@@ -8,11 +8,12 @@ window.onload = function() {
     var blockSize = 30;
     var snakee;
     var applee;
-    var wallCollection = false;
-    var snakeCollsion = false;
+
     //Exprimer en block 
     var widthInBlock = canvasWidth / blockSize;
     var heightInBlock = canvasheight / blockSize;
+    var score;
+    var timeout;
 
     //Init Canvas
     function init() {
@@ -29,6 +30,7 @@ window.onload = function() {
 
         ], "right");
         applee = new Apple([10, 10]);
+        score = 0;
         refreshCanvas();
 
     }
@@ -37,19 +39,39 @@ window.onload = function() {
         snakee.adavance();
         console.log(snakee.checkCollision());
         if (snakee.checkCollision()) {
-            //Game Over;
+            gameOver();
             console.log("game over");
         } else {
             if (snakee.isEatingApple(applee)) {
-                console.log(snakee.isEatingApple(applee));
+                score++;
+                snakee.eatApple = true;
+                //console.log(snakee.isEatingApple(applee));
                 //applee.setNewPosition();
-                applee.setNewPosition();
+                do {
+                    applee.setNewPosition();
+                } while (applee.isOnSnake(snakee))
+
             }
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             snakee.draw();
             applee.draw();
-            setTimeout(refreshCanvas, delay);
+            drawScore()
+            timeout = setTimeout(refreshCanvas, delay);
         }
+    }
+
+    function drawScore() {
+        ctx.save();
+        ctx.fillText(score.toString(), 5, canvasheight - 5);
+        ctx.restore();
+    }
+
+    function gameOver() {
+        ctx.save();
+        ctx.fillText("GameOver", 5, 15);
+        ctx.fillText("Appuyer sur la touche espace pour rejouer", 5, 30);
+
+        ctx.restore();
     }
 
     function drawBlock(ctx, position) {
@@ -61,7 +83,8 @@ window.onload = function() {
     function Snake(body, direction) {
         this.body = body;
         this.direction = direction;
-        console.log(this.direction);
+        this.eatApple = false;
+        //console.log(this.direction);
         this.draw = function() {
             ctx.save();
             ctx.fillStyle = "#ff0000";
@@ -90,7 +113,10 @@ window.onload = function() {
 
             }
             this.body.unshift(nextPosition);
-            this.body.pop();
+            if (!this.eatApple) {
+                this.body.pop();
+            } else
+                this.eatApple = false;
         };
         this.setDirection = function(newDirection) {
             var allowDirections;
@@ -114,7 +140,8 @@ window.onload = function() {
         };
 
         this.checkCollision = function() {
-
+            var wallCollection = false;
+            var snakeCollsion = false;
             var head = this.body[0];
             var rest = this.body.slice(1);
             var snakeX = head[0];
@@ -148,6 +175,21 @@ window.onload = function() {
 
     }
 
+    function restart() {
+        // console.log("la")
+        snakee = new Snake([
+            [6, 4],
+            [5, 4],
+            [4, 4],
+
+        ], "right");
+        applee = new Apple([10, 10]);
+        score = 0;
+        clearTimeout(timeout);
+        refreshCanvas();
+
+    }
+
     function Apple(position) {
         this.position = position;
         this.draw = function() {
@@ -164,10 +206,20 @@ window.onload = function() {
         this.setNewPosition = function() {
             var newX = Math.round(Math.random() * (widthInBlock - 1));
             var newY = Math.round(Math.random() * (heightInBlock - 1));
-            console.log("litissia");
+            //console.log("litissia");
             this.position = [newX, newY];
 
 
+        }
+        this.isOnSnake = function(snakeToCheck) {
+            var isOnSnake = false;
+
+            for (var i = 0; i < snakeToCheck.body.length; i++) {
+                if (this.position[0] === snakeToCheck.body[i][0] && this.position[1] === snakeToCheck.body[i][1]) {
+                    isOnSnake = true;
+                }
+            }
+            return isOnSnake;
         }
 
     }
@@ -189,6 +241,11 @@ window.onload = function() {
             case 40:
                 newDirection = "down";
                 break;
+            case 32:
+                //console.log("la");
+                restart();
+                return;
+
             default:
                 return;
         }
